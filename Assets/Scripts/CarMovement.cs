@@ -52,7 +52,6 @@ public class RallyCarController : MonoBehaviour
     {
         inputReader.EnablePlayerInput();
         inputReader.MoveEvent += OnMove;
-        Debug.Log("Car subscribed to MoveEvent");
     }
 
     private void OnDisable()
@@ -64,7 +63,6 @@ public class RallyCarController : MonoBehaviour
     private void OnMove(Vector2 moveInput)
     {
         this.moveInput = moveInput;
-        Debug.Log($"Car OnMove: {moveInput}");
     }
 
     private void Awake()
