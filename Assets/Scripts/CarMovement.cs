@@ -3,7 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Basic rally car controller using four WheelColliders.
 /// Features: AWD/FWD/RWD toggle, speed-sensitive steering, braking,
-/// anti-roll bars, downforce, and wheel mesh syncing.
+/// anti-roll bars, downforce, wheel mesh syncing (with left-side flip),
+/// and animated steering wheel + speedometer needle.
 /// Input comes from an InputReader (MoveEvent: x = steering, y = throttle/brake).
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
@@ -24,16 +25,20 @@ public class RallyCarController : MonoBehaviour
     [SerializeField] private Transform rearLeftMesh;
     [SerializeField] private Transform rearRightMesh;
 
+    [Header("Wheel Mesh Offsets")]
+    [Tooltip("Extra rotation applied to the LEFT wheel meshes so they face outward. Tweak live in play mode.")]
+    [SerializeField] private Vector3 leftWheelRotationOffset = new Vector3(0f, 180f, 0f);
+
     [Header("Drivetrain")]
-    [SerializeField] private bool driveFront = true;   
+    [SerializeField] private bool driveFront = true;    // both true = AWD
     [SerializeField] private bool driveRear = true;
     [SerializeField] private float motorTorque = 1800f; // total torque, split across driven wheels
     [SerializeField] private float maxSpeedKmh = 160f;
     [SerializeField] private float brakeTorque = 3000f;
 
     [Header("Steering (front wheels)")]
-    [SerializeField] private float maxSteerAngle = 90f;       // at low speed
-    [SerializeField] private float highSpeedSteerAngle = 8f;  // at max speed
+    [SerializeField] private float maxSteerAngle = 30f;       // real wheel angle at low speed
+    [SerializeField] private float highSpeedSteerAngle = 8f;  // real wheel angle at max speed
     [SerializeField] private float steerSpeed = 6f;           // how fast wheels turn toward target angle
 
     [Header("Stability")]
@@ -43,7 +48,13 @@ public class RallyCarController : MonoBehaviour
 
     [Header("Visual Animations")]
     [SerializeField] private Transform steeringWheel;
-    [SerializeField] private Transform SpeedometerNeedle;
+    [Tooltip("Visual steering wheel turns this many times the real wheel angle (30 deg wheels x 3 = 90 deg).")]
+    [SerializeField] private float steeringWheelRatio = 3f;
+    [SerializeField] private Transform speedometerNeedle;
+    [SerializeField] private float speedometerMaxKmh = 200f;
+    [Tooltip("Needle Z rotation at 0 km/h and at the speedometer max. Adjust to match your model.")]
+    [SerializeField] private float needleAngleAtZero = 135f;
+    [SerializeField] private float needleAngleAtMax = -135f;
 
     private Rigidbody rb;
     private Vector2 moveInput;
@@ -61,7 +72,7 @@ public class RallyCarController : MonoBehaviour
     private void OnDisable()
     {
         inputReader.MoveEvent -= OnMove;
-        OnMove(Vector2.zero); 
+        OnMove(Vector2.zero); // don't leave the car with throttle held
     }
 
     private void OnMove(Vector2 moveInput)
@@ -76,10 +87,13 @@ public class RallyCarController : MonoBehaviour
     }
 
     private void Update()
-    {       
-        UpdateWheelMeshes();
+    {
         steerInput = moveInput.x;
         throttleInput = moveInput.y;
+
+        UpdateWheelMeshes();
+        UpdateSteeringWheel();
+        UpdateSpeedometer();
     }
 
     private void FixedUpdate()
@@ -103,7 +117,6 @@ public class RallyCarController : MonoBehaviour
 
         frontLeft.steerAngle = currentSteerAngle;
         frontRight.steerAngle = currentSteerAngle;
-        steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -currentSteerAngle);
     }
 
     private void ApplyDrive()
@@ -132,7 +145,6 @@ public class RallyCarController : MonoBehaviour
         frontRight.brakeTorque = brake;
         rearLeft.brakeTorque = brake;
         rearRight.brakeTorque = brake;
-
     }
 
     // Transfers load between left/right wheels on the same axle to reduce body roll
@@ -160,16 +172,32 @@ public class RallyCarController : MonoBehaviour
 
     private void UpdateWheelMeshes()
     {
-        SyncWheel(frontLeft, frontLeftMesh);
-        SyncWheel(frontRight, frontRightMesh);
-        SyncWheel(rearLeft, rearLeftMesh);
-        SyncWheel(rearRight, rearRightMesh);
+        Quaternion leftOffset = Quaternion.Euler(leftWheelRotationOffset);
+
+        SyncWheel(frontLeft, frontLeftMesh, leftOffset);
+        SyncWheel(frontRight, frontRightMesh, Quaternion.identity);
+        SyncWheel(rearLeft, rearLeftMesh, leftOffset);
+        SyncWheel(rearRight, rearRightMesh, Quaternion.identity);
     }
 
-    private static void SyncWheel(WheelCollider wheelCollider, Transform mesh)
+    private static void SyncWheel(WheelCollider wheelCollider, Transform mesh, Quaternion offset)
     {
         if (mesh == null) return;
         wheelCollider.GetWorldPose(out Vector3 pos, out Quaternion rot);
-        mesh.SetPositionAndRotation(pos, rot);
+        mesh.SetPositionAndRotation(pos, rot * offset);
+    }
+
+    private void UpdateSteeringWheel()
+    {
+        if (steeringWheel == null) return;
+        steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -currentSteerAngle * steeringWheelRatio);
+    }
+
+    private void UpdateSpeedometer()
+    {
+        if (speedometerNeedle == null) return;
+        float t = Mathf.Clamp01(SpeedKmh / speedometerMaxKmh);
+        float angle = Mathf.Lerp(needleAngleAtZero, needleAngleAtMax, t);
+        speedometerNeedle.localRotation = Quaternion.Euler(0f, 0f, angle);
     }
 }
