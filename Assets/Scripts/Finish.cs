@@ -1,26 +1,34 @@
 using UnityEngine;
-using TMPro;
 
 public class Finish : MonoBehaviour
 {
+    private static Finish instance;
     private float finishTime;
-    private float bestTime;
 
-    [SerializeField] private TextMeshProUGUI BestTimeText;
+        private void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("Finish line crossed!");
             finishTime = Timer.currentTime;
-            if (finishTime < bestTime || bestTime == 0f)
+            if (finishTime < GameManager.BestTime || GameManager.BestTime == 0f)
             {
-                bestTime = finishTime;
-                bestTime = Mathf.Round(bestTime * 100f) / 100f;
-                BestTimeText.text = $"Best Time: {bestTime:F2}";
+                GameManager.instance.UpdateBestTime(finishTime);
             }
             Timer.ResetTimer();
+                
         }
     }
 }

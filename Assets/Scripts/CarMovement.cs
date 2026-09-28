@@ -25,14 +25,14 @@ public class RallyCarController : MonoBehaviour
     [SerializeField] private Transform rearRightMesh;
 
     [Header("Drivetrain")]
-    [SerializeField] private bool driveFront = true;   // both true = AWD
+    [SerializeField] private bool driveFront = true;   
     [SerializeField] private bool driveRear = true;
     [SerializeField] private float motorTorque = 1800f; // total torque, split across driven wheels
     [SerializeField] private float maxSpeedKmh = 160f;
     [SerializeField] private float brakeTorque = 3000f;
 
     [Header("Steering (front wheels)")]
-    [SerializeField] private float maxSteerAngle = 30f;       // at low speed
+    [SerializeField] private float maxSteerAngle = 90f;       // at low speed
     [SerializeField] private float highSpeedSteerAngle = 8f;  // at max speed
     [SerializeField] private float steerSpeed = 6f;           // how fast wheels turn toward target angle
 
@@ -40,6 +40,10 @@ public class RallyCarController : MonoBehaviour
     [SerializeField] private Vector3 centerOfMass = new Vector3(0f, -0.4f, 0.1f);
     [SerializeField] private float antiRollForce = 6000f;
     [SerializeField] private float downforce = 40f;           // extra grip at speed
+
+    [Header("Visual Animations")]
+    [SerializeField] private Transform steeringWheel;
+    [SerializeField] private Transform SpeedometerNeedle;
 
     private Rigidbody rb;
     private Vector2 moveInput;
@@ -99,6 +103,7 @@ public class RallyCarController : MonoBehaviour
 
         frontLeft.steerAngle = currentSteerAngle;
         frontRight.steerAngle = currentSteerAngle;
+        steeringWheel.localRotation = Quaternion.Euler(0f, 0f, -currentSteerAngle);
     }
 
     private void ApplyDrive()
@@ -127,6 +132,7 @@ public class RallyCarController : MonoBehaviour
         frontRight.brakeTorque = brake;
         rearLeft.brakeTorque = brake;
         rearRight.brakeTorque = brake;
+
     }
 
     // Transfers load between left/right wheels on the same axle to reduce body roll
