@@ -10486,8 +10486,8 @@ MonoBehaviour:
   steeringWheelRatio: 3
   speedometerNeedle: {fileID: 541183965}
   speedometerMaxKmh: 200
-  needleAngleAtZero: 135
-  needleAngleAtMax: -135
+  needleAngleAtZero: -20
+  needleAngleAtMax: 180
 --- !u!65 &64685711922989431
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10653,6 +10653,38 @@ PrefabInstance:
     - target: {fileID: 2650866027595880189, guid: 364dd494427db95908ceec85994af4fc, type: 3}
       propertyPath: m_SuspensionSpring.damper
       value: 3500
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.0011180411
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0070330547
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.0067677493
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.98736346
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.00000000769107
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.000000014901159
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.158472
+      objectReference: {fileID: 0}
+    - target: {fileID: 3111244950436218542, guid: 364dd494427db95908ceec85994af4fc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -18.236
       objectReference: {fileID: 0}
     - target: {fileID: 3243898344858492437, guid: 364dd494427db95908ceec85994af4fc, type: 3}
       propertyPath: m_LocalPosition.x
