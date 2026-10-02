@@ -1,14 +1,27 @@
 ﻿using UnityEngine;
 
-public class Orientation : MonoBehaviour
+namespace YawVR
 {
-    private Vector3 PitchYawRoll
+    /**
+     * Orientation is a component that provides access to the pitch, yaw, and roll of a GameObject.
+     * It calculates these values based on the GameObject's transform.
+     */
+    public class Orientation : MonoBehaviour
     {
-        get
+        public (float pitch, float yaw, float roll) GetAll()
         {
-            return new Vector3(pitch, yaw, roll);
+            Vector3 fwd = transform.forward;
+            Vector3 rgt = transform.right;
+            Vector3 up = transform.up;
+
+            float p = -Mathf.Asin(UnaryTrim(fwd.y)) * Mathf.Rad2Deg;
+            float y = ComputeYaw(fwd, rgt);
+            float r = Mathf.Atan2(rgt.y, up.y) * Mathf.Rad2Deg;
+
+            return (p, y, r);
         }
-        set
+
+        private void SetPitchYawRoll(Vector3 value)
         {
             transform.rotation = Quaternion.identity;
             Vector3 o = transform.position;
@@ -16,103 +29,71 @@ public class Orientation : MonoBehaviour
             transform.RotateAround(o, Vector3.right, value.x);
             transform.RotateAround(o, Vector3.up, value.y);
         }
-    }
 
-    /**
-	 * Pitch indicates whether a vehicle is pointing up or down.
-	 * It is the angle between the forward vector and the horizontal
-	 * plane.
-	 */
-    public float pitch
-    {
-        get
+        /*
+        * Pitch indicates whether a vehicle is pointing up or down.
+        * It is the angle between the forward vector and the horizontal
+        * plane.
+        */
+        public float Pitch
         {
-            float sine = UnaryTrim(transform.forward.y);
-            return -Mathf.Asin(sine) * Mathf.Rad2Deg;
+            get
+            {
+                float sine = UnaryTrim(transform.forward.y);
+                return -Mathf.Asin(sine) * Mathf.Rad2Deg;
+            }
+            set { SetPitchYawRoll(new Vector3(value, Yaw, Roll)); }
         }
-        set { PitchYawRoll = new Vector3(value, yaw, roll); }
-    }
 
-    /**
-	 * Yaw is the angle between the forward vector's ground image
-	 * and the forward/north direction.
-	 * Yaw is the general 'direction' or 'course'.
-	 * if a vehicle is pointing all the way up or down,
-	 * we extract yaw from the right vector.
-	 */
-    public float yaw
-    {
-        get
+        /*
+        * Yaw is the angle between the forward vector's ground image
+        * and the forward/north direction.
+        * Yaw is the general 'direction' or 'course'.
+        * if a vehicle is pointing all the way up or down,
+        * we extract yaw from the right vector.
+        */
+        public float Yaw
         {
-            Vector3 vector = Ground(transform.forward);
+            get => ComputeYaw(transform.forward, transform.right);
+            set { SetPitchYawRoll(new Vector3(Pitch, value, Roll)); }
+        }
+
+        /*
+        * Roll is the angle between the right vector and its ground image.
+        */
+        public float Roll
+        {
+            get
+            {
+                return Mathf.Atan2(transform.right.y, transform.up.y) * Mathf.Rad2Deg;
+            }
+            set { SetPitchYawRoll(new Vector3(Pitch, Yaw, value)); }
+        }
+
+        private float ComputeYaw(Vector3 fwd, Vector3 rgt)
+        {
+            Vector3 vector = Ground(fwd);
             if (vector.magnitude < 0.5f)
             {
-                return EvalAltYaw();
+                return EvalAltYaw(rgt);
             }
             float alpha = Vector3.Angle(vector, Vector3.forward);
             return vector.x > 0 ? alpha : -alpha;
         }
-        set { PitchYawRoll = new Vector3(pitch, value, roll); }
-    }
 
-    /**
-	 * Roll is the angle between the right vector and its ground image.
-	 */
-    public float roll
-    {
-        get
+        private float EvalAltYaw(Vector3 rgt)
         {
-            float sine = UnaryTrim(transform.right.y);
-            return Mathf.Asin(sine) * Mathf.Rad2Deg;
+            Vector3 vector = Ground(rgt);
+            float alpha = Vector3.Angle(vector, Vector3.right);
+            return vector.z < 0 ? alpha : -alpha;
         }
-        set { PitchYawRoll = new Vector3(pitch, yaw, value); }
-    }
 
-    public float attitude
-    {
-        get { return pitch; }
-        set { pitch = value; }
-    }
+        private Vector3 Ground(Vector3 u)
+        {
+            u.y = 0.0f;
+            return u;
+        }
 
-    public float heading
-    {
-        get { return yaw; }
-        set { yaw = value; }
-    }
-
-    public float bank
-    {
-        get { return roll; }
-        set { roll = value; }
-    }
-
-    // PRIVATE ---------------------------------------------------------
-
-    /**
-	 * Alternatively Yaw can be calculated as the angle
-	 * between the ground projection of the right vector
-	 * and the east/right direction.
-	 * Even if a vehicle is pointing straight up or dawn,
-	 * you can still tell it's course/direction looking at
-	 * position of the wings/tyres.
-	 */
-    private float EvalAltYaw()
-    {
-        Vector3 vector = Ground(transform.right);
-        float alpha = Vector3.Angle(vector, Vector3.right);
-        return vector.z < 0 ? alpha : -alpha;
-    }
-
-    private Vector3 Ground(Vector3 u)
-    {
-        u.y = 0.0f;
-        return u;
-    }
-
-    private float UnaryTrim(float w)
-    {
-        if (w > 1.0) return 1.0f;
-        if (w < -1.0) return -1.0f;
-        return w;
+        private float UnaryTrim(float w) => Mathf.Clamp(w, -1f, 1f);
     }
 }

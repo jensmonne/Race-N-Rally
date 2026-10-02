@@ -6,31 +6,18 @@ using UnityEngine.UI;
 
 namespace YawVR
 {
-
     public class SampleYawControllerDelegateImplementation : MonoBehaviour, IYawControllerDelegate
     {
-
-        //YAW device settings ui elements
-        [SerializeField]
-        private Text setupTitleLabel;
-        [SerializeField]
-        private GameObject deviceListScrollViewContent;
-        [SerializeField]
-        private GameObject DeviceListItemPrefab;
-        [SerializeField]
-        private Button connectButton;
-        [SerializeField]
-        private InputField ipAddressInputField;
-        [SerializeField]
-        private InputField udpPortInputField;
-        [SerializeField]
-        private InputField tcpPortInputField;
-        [SerializeField]
-        private Button disconnectButton;
-      
-        [SerializeField]
-        private Text errorText;
-
+        // YAW device settings ui elements
+        [SerializeField] private Text setupTitleLabel;
+        [SerializeField] private GameObject deviceListScrollViewContent;
+        [SerializeField] private GameObject DeviceListItemPrefab;
+        [SerializeField] private Button connectButton;
+        [SerializeField] private InputField ipAddressInputField;
+        [SerializeField] private InputField udpPortInputField;
+        [SerializeField] private InputField tcpPortInputField;
+        [SerializeField] private Button disconnectButton;
+        [SerializeField] private Text errorText;
 
         //DeviceDiscovery deviceDiscovery = new DeviceDiscovery();
         private int? udpPort = 50010;
@@ -38,21 +25,17 @@ namespace YawVR
 
         private IPAddress ipAddress;
         private YawDevice selectedDevice;
-       // private List<YawDevice> availableDevices = new List<YawDevice>();
-       // private List<GameObject> deviceButtons = new List<GameObject>();
-  
-        [SerializeField]
-        private GameObject settingsPanel;
-        [SerializeField]
-        private GameObject buttonSample;
+        // private List<YawDevice> availableDevices = new List<YawDevice>();
+        // private List<GameObject> deviceButtons = new List<GameObject>();
+
+        [SerializeField] private GameObject settingsPanel;
+        [SerializeField] private GameObject buttonSample;
 
         private List<IPAddress> foundIps = new List<IPAddress>();
         private Coroutine searchCoroutine;
 
-        void Start()
+        private void Start()
         {
-
-            
             //Setting ui elements' initial state and methods
             setupTitleLabel.text = "Set target YAW device";
 
@@ -65,34 +48,30 @@ namespace YawVR
             tcpPortInputField.text = tcpPort.ToString();
             tcpPortInputField.onValueChanged.AddListener(delegate { TCPPortInputFieldTextDidChange(tcpPortInputField); });
             ipAddressInputField.onValueChanged.AddListener(delegate { IPAddressInputFieldTextDidChange(ipAddressInputField); });
-          
- 
+
             //Set self to delegate, to recieve DidFoundDevice(:) method calls from YAWController
             YawController.Instance.ControllerDelegate = this;
 
             //Initially set YAWController related ui elements according to YAWController's state
             RefreshLayout(YawController.Instance.State);
-           
+
             //Start seacrhing for devices
             //StartCoroutine(SearchForDevices());
         }
-
-   
 
         public void DeviceStoppedFromApp()
         {
             Debug.Log("DEVICE STOPPED FROM CONFIGAPP");
         }
+
         public void DeviceStartedFromApp()
         {
-           
             Debug.Log("DEVICE STARTED FROM CONFIGAPP");
         }
-       
 
         private void OnDestroy()
         {
-           // StopCoroutine(SearchForDevices());
+            // StopCoroutine(SearchForDevices());
 
             //Remove all listeners
             connectButton.onClick.RemoveAllListeners();
@@ -100,7 +79,6 @@ namespace YawVR
             udpPortInputField.onValueChanged.RemoveAllListeners();
             tcpPortInputField.onValueChanged.RemoveAllListeners();
             ipAddressInputField.onValueChanged.RemoveAllListeners();
-           
         }
 
         private IEnumerator SearchForDevices()
@@ -108,20 +86,19 @@ namespace YawVR
             Debug.Log("started searching for devices");
             while (true)
             {
-                
                 if (udpPort != null && udpPort > 1024)
                 {
                     YawController.Instance.DiscoverDevices(udpPort.Value);
                 }
+
                 yield return new WaitForSeconds(0.5f);
             }
         }
 
-
-        void UDPPortInputFieldTextDidChange(InputField inputField)
+        private void UDPPortInputFieldTextDidChange(InputField inputField)
         {
-         //   availableDevices.Clear();
-          //  LayoutDeviceButtons(availableDevices);
+            //   availableDevices.Clear();
+            //  LayoutDeviceButtons(availableDevices);
             int portNumber;
             if (int.TryParse(inputField.text, out portNumber))
             {
@@ -136,7 +113,7 @@ namespace YawVR
             SetDeviceFromPortAndIp();
         }
 
-        void TCPPortInputFieldTextDidChange(InputField inputField)
+        private void TCPPortInputFieldTextDidChange(InputField inputField)
         {
             int portNumber;
             if (int.TryParse(inputField.text, out portNumber))
@@ -152,7 +129,7 @@ namespace YawVR
             SetDeviceFromPortAndIp();
         }
 
-        void IPAddressInputFieldTextDidChange(InputField inputField)
+        private void IPAddressInputFieldTextDidChange(InputField inputField)
         {
             IPAddress ipFromString;
             if (IPAddress.TryParse(inputField.text, out ipFromString))
@@ -168,7 +145,7 @@ namespace YawVR
             SetDeviceFromPortAndIp();
         }
 
-        void SetDeviceFromPortAndIp()
+        private void SetDeviceFromPortAndIp()
         {
             if (ipAddress != null && udpPort != null && tcpPort != null)
             {
@@ -182,7 +159,7 @@ namespace YawVR
             }
         }
 
-        void ConnectButtonPressed()
+        private void ConnectButtonPressed()
         {
             if (selectedDevice != null)
             {
@@ -198,7 +175,7 @@ namespace YawVR
             }
         }
 
-        void DisconnectButtonPressed()
+        private void DisconnectButtonPressed()
         {
             if (YawController.Instance.State != ControllerState.Initial)
             {
@@ -212,7 +189,7 @@ namespace YawVR
             }
         }
 
-        void DeviceListItemPressed(YawDevice device)
+        private void DeviceListItemPressed(YawDevice device)
         {
             if (device.Status != DeviceStatus.Available || YawController.Instance.State != ControllerState.Initial) return;
             ipAddressInputField.text = device.IPAddress.ToString();
@@ -220,14 +197,12 @@ namespace YawVR
             tcpPortInputField.text = device.TCPPort.ToString();
             selectedDevice = device;
             connectButton.interactable = true;
-        }   
-
-
+        }
 
         public void DidFoundDevice(YawDevice device)
         {
-        
-            if (!foundIps.Contains(device.IPAddress)) {
+            if (!foundIps.Contains(device.IPAddress))
+            {
                 Debug.Log("Found device: " + device.Name);
                 foundIps.Add(device.IPAddress);
 
@@ -240,8 +215,6 @@ namespace YawVR
                 go.GetComponentInChildren<Text>().text = buttonText;
                 go.GetComponent<Button>().onClick.AddListener(delegate { DeviceListItemPressed(device); });
             }
-
-          
         }
 
         private bool SameDevice(YawDevice device, YawDevice toDevice)
@@ -250,22 +223,21 @@ namespace YawVR
             return false;
         }
 
-       /* public void YawLimitDidChange(int currentLimit)
-        {
-            yawLimitInputField.text = currentLimit.ToString();
-        }
+        /* public void YawLimitDidChange(int currentLimit)
+         {
+             yawLimitInputField.text = currentLimit.ToString();
+         }
 
-        public void TiltLimitsDidChange(int pitchFrontLimit, int pitchBackLimit, int rollLimit)
-        {
-            pitchForwardLimitInputField.text = pitchFrontLimit.ToString();
-            pitchBackwardLimitInputField.text = pitchBackLimit.ToString();
-            rollLimitInputField.text = rollLimit.ToString();
-        }
-        */
+         public void TiltLimitsDidChange(int pitchFrontLimit, int pitchBackLimit, int rollLimit)
+         {
+             pitchForwardLimitInputField.text = pitchFrontLimit.ToString();
+             pitchBackwardLimitInputField.text = pitchBackLimit.ToString();
+             rollLimitInputField.text = rollLimit.ToString();
+         }*/
+        
         public void DidDisconnectFrom(YawDevice device)
         {
             ShowError("Device disconnected");
-           
         }
 
         public void ControllerStateChanged(ControllerState state)
@@ -273,7 +245,8 @@ namespace YawVR
             RefreshLayout(state);
         }
 
-        private void RefreshLayout(ControllerState state) {
+        private void RefreshLayout(ControllerState state)
+        {
             switch (state)
             {
                 case ControllerState.Initial:
@@ -330,46 +303,54 @@ namespace YawVR
             errorText.text = "";
         }
 
-        public void ParkDevice() {
-            if (YawController.Instance.State == ControllerState.Started) {
+        public void ParkDevice()
+        {
+            if (YawController.Instance.State == ControllerState.Started)
+            {
                 YawController.Instance.StopDevice(true);
             }
         }
-        public void StartDevice() {
-            if (YawController.Instance.State == ControllerState.Connected) {
+
+        public void StartDevice()
+        {
+            Debug.Log("StartDevice called");
+            if (YawController.Instance.State == ControllerState.Connected)
+            {
+                Debug.Log("Starting device");
                 YawController.Instance.StartDevice();
             }
         }
-        public void CalibrateDevice() {
-            if (YawController.Instance.State != ControllerState.Initial) {
+
+        public void CalibrateDevice()
+        {
+            if (YawController.Instance.State != ControllerState.Initial)
+            {
                 YawController.Instance.CalibrateDevice(true);
             }
         }
 
-        public void HideShowPanel() {
+        public void HideShowPanel()
+        {
             ClearList();
-            if (!settingsPanel.activeInHierarchy) {
+            if (!settingsPanel.activeInHierarchy)
+            {
                 settingsPanel.SetActive(true);
                 searchCoroutine = StartCoroutine(SearchForDevices());
-                if (YawController.Instance.State == ControllerState.Started) {
-                   
-                }
+                if (YawController.Instance.State == ControllerState.Started) { }
             }
-            else {
-                
+            else
+            {
                 settingsPanel.SetActive(false);
-                if (YawController.Instance.State == ControllerState.Connected) {
-                   
-                }
+                if (YawController.Instance.State == ControllerState.Connected) { }
                 StopCoroutine(searchCoroutine);
-
             }
         }
 
-
-        private void ClearList() {
-            foreach(Transform t in buttonSample.transform.parent) {
-                if(t.gameObject.activeSelf )Destroy(t.gameObject);
+        private void ClearList()
+        {
+            foreach (Transform t in buttonSample.transform.parent)
+            {
+                if (t.gameObject.activeSelf) Destroy(t.gameObject);
             }
             foundIps.Clear();
         }

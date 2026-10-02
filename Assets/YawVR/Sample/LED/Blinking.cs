@@ -1,36 +1,37 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace YawVR {
-    public class Blinking : MonoBehaviour {
-        [SerializeField]
-        private Color color;
-
-
+namespace YawVR
+{
+    public class Blinking : MonoBehaviour
+    {
         private Coroutine cor;
-
-        [SerializeField]
-        private float blinkDelay = 1f;
-
         private WaitForSeconds delay;
 
+        [SerializeField] private Color color;
+        [SerializeField] private float blinkDelay = 1f;
 
-        private void Awake() {
+        private void Awake()
+        {
             delay = new WaitForSeconds(blinkDelay);
         }
 
-        public void StartBlinking() {
-
+        public void StartBlinking()
+        {
             StopBlinking();
             cor = StartCoroutine(BlinkingCoroutine());
         }
-        public void StopBlinking() {
+
+        public void StopBlinking()
+        {
             if (cor != null) StopCoroutine(cor);
         }
-        private IEnumerator BlinkingCoroutine() {
+
+        private IEnumerator BlinkingCoroutine()
+        {
             bool b = false;
-            while (true) {
+            while (true)
+            {
                 Color toSet = b ? color : Color.black;
 
                 b = !b;

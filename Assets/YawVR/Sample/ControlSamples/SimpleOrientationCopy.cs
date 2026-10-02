@@ -1,7 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using YawVR;
+
 /// <summary>
 /// Sets the YawTracker's orientation based on the GameObject's orientation
 /// </summary>
@@ -12,10 +11,13 @@ public class SimpleOrientationCopy : MonoBehaviour
     */
     YawController yawController; // reference to YawController
 
-    private void Start() {
+    private void Start()
+    {
         yawController = YawController.Instance;
     }
-    private void FixedUpdate() {
+
+    private void FixedUpdate()
+    {
         yawController.TrackerObject.SetRotation(transform.localEulerAngles);
     }
 }

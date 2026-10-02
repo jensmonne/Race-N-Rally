@@ -2,9 +2,7 @@
 using UnityEngine;
 using System;
 using System.Net;
-using System.Threading;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Text;
 using System.Collections.Generic;
 using UnityEngine.Events;
@@ -90,7 +88,7 @@ namespace YawVR
         /// <summary>
         /// A found is device on network
         /// </summary>
-        void DidFoundDevice(YawDevice device);
+        //void DidFoundDevice(YawDevice device);
 
         /// <summary>
         /// Disconnected from device
@@ -138,6 +136,8 @@ namespace YawVR
     public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
+        public static YawController Instance => instance != null ? instance : throw new Exception("[YawController] Please drag YawController prefab into your scene.");
+
         public static List<Action> OnConnectReceivers = new();
 
         private YawTCPClient tcpCLient;
@@ -154,14 +154,6 @@ namespace YawVR
         private YawTracker yawTracker;
 
         #region PROPERTIES
-        public static YawController Instance
-        {
-            get
-            {
-                if (instance == null) throw new Exception("[YawController] Please drag YawController prefab into your scene.");
-                return instance;
-            }
-        }
 
         public YawTracker TrackerObject => yawTracker;
         public ControllerState State => state;
@@ -226,9 +218,9 @@ namespace YawVR
 
         private void Start()
         {
-            if (connectType == ConnectType.CONNECT_FIRST_FOUND_DEVICE) AutoConnectFirst();
+            if (connectType == ConnectType.ConnectFirstFoundDevice) AutoConnect();
 
-            if (connectType == ConnectType.DEBUG_CONNECT_TO_IP)
+            if (connectType == ConnectType.DebugConnectToIp)
             {
                 ConnectToDevice(new YawDevice(IPAddress.Parse(debug_ipAddress), 50020, 50010, "001", "DEBUG", DeviceStatus.Available), null, null);
             }
@@ -236,9 +228,9 @@ namespace YawVR
 
         private void FixedUpdate()
         {
-            referenceRotation.pitch = orientation.pitch;
-            referenceRotation.yaw = orientation.yaw;
-            referenceRotation.roll = orientation.roll;
+            referenceRotation.pitch = orientation.Pitch;
+            referenceRotation.yaw = orientation.Yaw;
+            referenceRotation.roll = orientation.Roll;
 
             if (state == ControllerState.Started || state == ControllerState.Connected)
             {
@@ -313,8 +305,6 @@ namespace YawVR
                     },
                     (error) =>
                     {
-                        //Could not connect to tcp server
-                        //Stop tcp connection timeout
                         StopCoroutineSafe(ref callbackTimeouts.tcpConnectionAttemptTimeout);
                         onError?.Invoke(error);
                         SetState(ControllerState.Initial);
@@ -344,7 +334,7 @@ namespace YawVR
                 SetState(ControllerState.Starting);
                 tcpCLient.BeginSend(Commands.START);
             }
-            else onError?.Invoke("Attempted to start device when device has not been in connected ready state");
+            else onError?.Invoke("[YawController] Attempted to start device when device has not been in connected ready state");
         }
 
         public void StopDevice(bool park, Action onSuccess = null, Action<string> onError = null)
@@ -357,7 +347,7 @@ namespace YawVR
                 SetState(ControllerState.Stopping);
                 tcpCLient.BeginSend(new byte[] { Commands.STOP, (byte)(park ? 1 : 0) });
             }
-            else onError?.Invoke("Attempted to stop simulator when simulator had not been in started state");
+            else onError?.Invoke("[YawController] Attempted to stop simulator when simulator had not been in started state");
         }
 
         public void CalibrateDevice(bool allAxis)
@@ -383,9 +373,10 @@ namespace YawVR
 
                 tcpCLient.BeginSend(Commands.EXIT);
                 SetState(ControllerState.Disconnecting);
+                Debug.Log("[YawController] Disconnected from device");
                 onDisconnected?.Invoke();
             }
-            else onError?.Invoke("Attempted to disconnect when no device was connected");
+            else onError?.Invoke("[YawController] Attempted to disconnect when no device was connected");
         }
 
         public void DidRecieveUDPMessage(string message, IPEndPoint remoteEndPoint)
@@ -411,7 +402,13 @@ namespace YawVR
                 {
                     DeviceStatus status = messageParts[4] == "AVAILABLE" ? DeviceStatus.Available : DeviceStatus.Reserved;
                     var yawDevice = new YawDevice(remoteEndPoint.Address, tcp, discoveryPort, messageParts[1], messageParts[2], status);
-                    ControllerDelegate?.DidFoundDevice(yawDevice);
+
+                    Debug.Log("[YawController] Found device: " + yawDevice.Name);
+
+                    if (connectType == ConnectType.ConnectFirstFoundDevice)
+                    {
+                        HandleAutoDiscoveredDevice(yawDevice);
+                    }
                 }
             }
         }
@@ -424,12 +421,10 @@ namespace YawVR
             startIdx += 2;
             int endIdx = msg.IndexOf(']', startIdx);
             
-            if (endIdx != -1)
-            {
-                string valStr = msg.Substring(startIdx, endIdx - startIdx);
-                return float.TryParse(valStr, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
-            }
-            return false;
+            if (endIdx == -1) return false;
+            
+            ReadOnlySpan<char> valSpan = msg.AsSpan(startIdx, endIdx - startIdx);
+            return float.TryParse(valSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
         }
 
         public void DidRecieveTCPMessage(byte[] data)
@@ -563,23 +558,24 @@ namespace YawVR
 
                 case CommandIds.GET_STATE:
                     string statestring = Encoding.ASCII.GetString(data, 2, data.Length - 2).Trim();
-                    DeviceState newState = DeviceState.STOPPED;
+                    DeviceState newState = DeviceState.Stopped;
                     switch (statestring)
                     {
                         case "disabled":
-                            newState = DeviceState.STOPPED;
+                            newState = DeviceState.Stopped;
                             break;
                         case "simulation mode":
-                            newState = DeviceState.STARTED;
+                            newState = DeviceState.Started;
                             break;
                         case "emergency mode":
-                            newState = DeviceState.NOTRACKER;
+                            newState = DeviceState.NoTracker;
                             break;
                         case "parking":
-                            newState = DeviceState.PARKING;
+                            newState = DeviceState.Parking;
                             break;
                     }
-                    if (device.State != newState) onStateChanged.Invoke(newState);
+                    if (device.State != newState) {onStateChanged.Invoke(newState);
+                    Debug.Log($"[YawController] Device state changed to: {newState}");}
                     this.device.State = newState;
                     break;
 
@@ -750,21 +746,37 @@ namespace YawVR
         }
 
         #region AutoConnect
-        private void AutoConnectFirst()
+        private Coroutine discoveryCoroutine;
+
+        private void AutoConnect()
         {
-            Debug.Log("-----------------------------DISCOVER---------------------------");
-            // starting a repeating call to YawController.Instance().DiscoverDevices(udpPort) with the help of a coroutine - calling continuously because udp packet may be lost
-            StartCoroutine(DeviceDiscoveryCoroutine());
-            // We receive device in the DidFoundDevice(YawDevice) method
+            discoveryCoroutine = StartCoroutine(DeviceDiscoveryCoroutine());
         }
 
         private IEnumerator DeviceDiscoveryCoroutine()
         {
+            for (int i = 0; i < 3 && state == ControllerState.Initial; i++)
+            {
+                DiscoverDevices(50010);
+                yield return new WaitForSeconds(0.2f);
+            }
+
             while (state == ControllerState.Initial)
             {
                 DiscoverDevices(50010);
+                yield return new WaitForSeconds(1f);
+            }
+        }
 
-                yield return new WaitForSeconds(1);
+        private void HandleAutoDiscoveredDevice(YawDevice device)
+        {
+            if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
+            {
+                StopCoroutineSafe(ref discoveryCoroutine);
+                ConnectToDevice(device, () =>
+                {
+                    StartDevice();
+                }, (error) => { Debug.Log("[YawController] connection error"); });
             }
         }
 
@@ -778,20 +790,6 @@ namespace YawVR
                 tcpCLient.BeginSend(new byte[] { CommandIds.GET_STATE });
                 tcpCLient.BeginSend(new byte[] { CommandIds.GET_TEMPS });
                 yield return wait;
-            }
-        }
-
-        // YawControllerDelegate functions
-        private void DidFoundDevice(YawDevice device)
-        {
-            //    Debug.Log("Did found device: " + device.Name);
-            if (YawController.Instance.State == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
-            {
-                Debug.Log("-----------------------------CONNECT TO A DEVICE---------------------------");
-                YawController.Instance.ConnectToDevice(device, () =>
-                {
-                    Debug.Log("YAWCONTROLLER: connected");
-                }, (error) => { Debug.Log("kapcsolat error"); });
             }
         }
         #endregion

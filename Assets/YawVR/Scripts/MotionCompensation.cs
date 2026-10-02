@@ -28,11 +28,11 @@ namespace YawVR
 
         private void LateUpdate()
         {
-            if (YawController.Instance.State != ControllerState.Started || YawController.Instance.State != ControllerState.Connected) return;
+            if (YawController.Instance.State != ControllerState.Started || cameraOffsetTransform == null) return;
 
             simData.y = -yawController.Device.ActualPosition.yaw;
             Quaternion targetRotation = Quaternion.Euler(simData - offset);
-            cameraOffsetTransform.rotation = Quaternion.Slerp(cameraOffsetTransform.rotation, targetRotation, Time.deltaTime * smoothingSpeed);
+            cameraOffsetTransform.localRotation = Quaternion.Slerp(cameraOffsetTransform.localRotation, targetRotation, Time.deltaTime * smoothingSpeed);
         }
     }
 }

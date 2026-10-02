@@ -6,7 +6,7 @@ namespace YawVR
     [Serializable]
     public enum DeviceState
     {
-        STOPPED, STARTED, NOTRACKER, PARKING
+        Stopped, Started, NoTracker, Parking
     }
 
     /// <summary>
@@ -43,11 +43,6 @@ namespace YawVR
             this.udpPort = udpPort;
             this.id = id;
             this.name = name;
-            this.status = status;
-        }
-
-        public void SetStatus(DeviceStatus status)
-        {
             this.status = status;
         }
     }

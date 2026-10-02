@@ -5,9 +5,9 @@
     /// </summary>
     public enum ConnectType
     {
-        CONNECT_FIRST_FOUND_DEVICE,
-        DEBUG_CONNECT_TO_IP,
-        NO_AUTO_CONNECT
+        ConnectFirstFoundDevice,
+        DebugConnectToIp,
+        NoAutoConnect
     }
 
     /// <summary>
@@ -15,12 +15,9 @@
     /// </summary>
     public enum DeviceStatus
     {
-        Available, Reserved, Unknown
-    }
-
-    public enum Result
-    {
-        Success, Error
+        Available,
+        Reserved,
+        Unknown
     }
 
     /// <summary>
@@ -28,6 +25,13 @@
     /// </summary>
     public enum ControllerState
     {
-        Initial, Connecting, Connected, Starting, Started, Stopping, Disconnecting
+        Initial,
+        Connecting,
+        Connected,
+        Starting,
+        Started,
+        Stopping,
+        Disconnecting
+        // TODO: Add connectionlost state???
     }
 }

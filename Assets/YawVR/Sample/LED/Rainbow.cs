@@ -1,43 +1,49 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace YawVR {
-    public class Rainbow : MonoBehaviour {
+namespace YawVR
+{
+    public class Rainbow : MonoBehaviour
+    {
+        private Coroutine coroutine;
 
-        Coroutine coroutine;
+        private Color32[] colors = new Color32[129];
 
-        Color32[] colors = new Color32[129];
-        byte[] bytes = new byte[390];
+        private double multiplier = 10;
+        private ushort counter = 0;
 
-        double multiplier = 10;
-        ushort counter = 0;
-
-
-        [SerializeField]
-        private float loopDelay = 0.02f;
+        [SerializeField] private float loopDelay = 0.02f;
         private WaitForSeconds delay;
-        private void Awake() {
+
+        private void Awake()
+        {
             delay = new WaitForSeconds(loopDelay);
         }
 
-        public void StartRainbow() {
+        public void StartRainbow()
+        {
             StopRainbow();
 
             coroutine = StartCoroutine(RainbowCoroutine());
         }
-        public void StopRainbow() {
+
+        public void StopRainbow()
+        {
             if (coroutine != null) StopCoroutine(coroutine);
         }
-        IEnumerator RainbowCoroutine() {
-            while (true) {
-                for (int i = 0; i < colors.Length; i++) {
+
+        IEnumerator RainbowCoroutine()
+        {
+            while (true)
+            {
+                for (int i = 0; i < colors.Length; i++)
+                {
                     colors[i].g = (byte)(Math.Sin(X(i)) * 255);
                     colors[i].r = (byte)(-Math.Sin(X(i)) * 255);
                     colors[i].b = (byte)(-Math.Cos(X(i)) * 255);
-                  
                 }
+
                 counter++;
 
                 YawController.Instance.SendLED(colors);
@@ -45,8 +51,6 @@ namespace YawVR {
             }
         }
 
-        private double X(int i) {
-            return ((multiplier * ((i) + counter)) / 129);
-        }
+        private double X(int i) => multiplier * (i + counter) / 129;
     }
 }

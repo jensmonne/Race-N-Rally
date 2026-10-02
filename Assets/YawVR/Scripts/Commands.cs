@@ -63,6 +63,12 @@ namespace YawVR
 
         public static byte[] UDP_LED_CMD(Color32[] colors)
         {
+            if (colors == null || colors.Length != 129)
+            {
+                Debug.LogError("[Commands] UDP_LED_CMD requires exactly 129 colors.");
+                return null;
+            }
+
             var bytes = new byte[390];
             bytes[0] = CommandIds.UDP_LED_CMD;
             FromShort(udpLedCounter, out bytes[1], out bytes[2]);
@@ -142,14 +148,6 @@ namespace YawVR
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(intBytes);
             return intBytes;
-        }
-
-        private static byte[] FloatToByteArray(float floatValue)
-        {
-            byte[] floatBytes = BitConverter.GetBytes(floatValue);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(floatBytes);
-            return floatBytes;
         }
 
         public static int ByteArrayToInt(byte[] intBytes, int startIndex)
