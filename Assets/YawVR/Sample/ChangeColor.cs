@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using YawVR;
 
 
@@ -15,10 +13,10 @@ public class ChangeColor : MonoBehaviour
 
     public void StateChanged(DeviceState state) {
         switch (state) {
-            case DeviceState.STOPPED:
+            case DeviceState.Stopped:
                 this.gameObject.GetComponent<Renderer>().material.color = stoppedColor;
                 break;
-            case DeviceState.STARTED:
+            case DeviceState.Started:
                 this.gameObject.GetComponent<Renderer>().material.color = startedColor;
                 break;
         }

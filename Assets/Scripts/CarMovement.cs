@@ -1,4 +1,5 @@
 using UnityEngine;
+using YawVR;
 
 /// <summary>
 /// Basic rally car controller using four WheelColliders.
@@ -106,6 +107,8 @@ public class RallyCarController : MonoBehaviour
 
         // Push the car into the ground harder as it goes faster
         rb.AddForce(-transform.up * downforce * rb.linearVelocity.magnitude);
+
+        YawController.Instance.TrackerObject.SetRotation(transform.localEulerAngles);
     }
 
     private void ApplySteering()
