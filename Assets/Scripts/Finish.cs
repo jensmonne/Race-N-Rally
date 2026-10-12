@@ -5,6 +5,10 @@ public class Finish : MonoBehaviour
     private static Finish instance;
     private float finishTime;
 
+    [SerializeField] private int TotalLapCount = 3;
+
+    public int CurrentLapCount { get; private set; } = 0;
+
         private void Awake()
     {
         if (instance == null)
@@ -29,6 +33,15 @@ public class Finish : MonoBehaviour
             }
             Timer.ResetTimer();
                 
+        }
+    }
+
+    private void UpdateLapCount()
+    {
+        CurrentLapCount++;
+        if (CurrentLapCount >= TotalLapCount)
+        {
+            Debug.Log("Race Finished!");
         }
     }
 }
