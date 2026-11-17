@@ -1,14 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f540eba7db68b2914aed0969427a7de6, type: 3}
-  m_Name: InputReader
-  m_EditorClassIdentifier: Assembly-CSharp::InputReader
+version https://git-lfs.github.com/spec/v1
+oid sha256:148b2719f76b076a356c0dcff932cd606e53fc1d031e2817c5f75995e20d86af
+size 428
