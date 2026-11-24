@@ -133,7 +133,8 @@ namespace YawVR
     [Serializable]
     public class StateChangeEvent : UnityEvent<DeviceState> { }
 
-    public class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
+    [DefaultExecutionOrder(-100)]
+    public partial class YawController : MonoBehaviour, IYawControllerType, IYawTCPClientDelegate, IYawUDPClientDelegate
     {
         private static YawController instance;
         public static YawController Instance => instance != null ? instance : throw new Exception("[YawController] Please drag YawController prefab into your scene.");
@@ -166,8 +167,6 @@ namespace YawVR
 
         [SerializeField] private Transform referenceTransform; // we will copy this objects rotation, and send it to the sim
         [SerializeField] private string gameName; // name of the game
-        [SerializeField] private ConnectType connectType; // connect type, for debug purposes
-        [SerializeField] private string debug_ipAddress; // ip to connect in debug mode
         [SerializeField] private int udpClientPort;
 
         private OVector referenceRotation; // the rotation of the YAWTracker
@@ -184,6 +183,9 @@ namespace YawVR
         [SerializeField] private UnityEvent onConnected;
         [SerializeField] private UnityEvent onDisconnected;
         [SerializeField] private StateChangeEvent onStateChanged;
+
+        public event Action<YawDevice> DeviceDiscovered;
+        public event Action<ControllerState> StateChanged;
 
         private void Awake()
         {
@@ -213,17 +215,9 @@ namespace YawVR
 
             udpClient.StartListening();
 
+            if (useRustServer) RustAwake(); // Rust yawvr-server, see YawController.RustServer.cs
+
             Debug.Log("[YawController] Initialized");
-        }
-
-        private void Start()
-        {
-            if (connectType == ConnectType.ConnectFirstFoundDevice) AutoConnect();
-
-            if (connectType == ConnectType.DebugConnectToIp)
-            {
-                ConnectToDevice(new YawDevice(IPAddress.Parse(debug_ipAddress), 50020, 50010, "001", "DEBUG", DeviceStatus.Available), null, null);
-            }
         }
 
         private void FixedUpdate()
@@ -249,6 +243,7 @@ namespace YawVR
 
             tcpCLient?.CloseConnection();
             udpClient?.StopListening();
+            RustShutdown(); // Rust yawvr-server, see YawController.RustServer.cs
 
             instance = null;
         }
@@ -268,12 +263,14 @@ namespace YawVR
 
         public void DiscoverDevices(int onPort)
         {
+            if (RustActive) { RustDiscoverDevices(onPort); return; } // Rust yawvr-server, see YawController.RustServer.cs
             discoveryPort = onPort;
             udpClient.SendBroadcast(onPort, Commands.DEVICE_DISCOVERY);
         }
 
         public void ConnectToDevice(YawDevice yawDevice, Action onSuccess, Action<string> onError)
         {
+            if (RustActive) { RustConnectToDevice(yawDevice, onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Initial)
             {
                 SetState(ControllerState.Connecting);
@@ -326,6 +323,7 @@ namespace YawVR
 
         public void StartDevice(Action onSuccess = null, Action<string> onError = null)
         {
+            if (RustActive) { RustStartDevice(onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Connected)
             {
                 callBacks.startSuccess = onSuccess;
@@ -339,6 +337,7 @@ namespace YawVR
 
         public void StopDevice(bool park, Action onSuccess = null, Action<string> onError = null)
         {
+            if (RustActive) { RustStopDevice(park, onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Started)
             {
                 callBacks.stopSuccess = onSuccess;
@@ -352,6 +351,7 @@ namespace YawVR
 
         public void CalibrateDevice(bool allAxis)
         {
+            if (RustActive) { RustCalibrateDevice(allAxis); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state == ControllerState.Connected)
             {
                 tcpCLient.BeginSend(new byte[2] { Commands.CALIBRATE[0], (byte)(allAxis ? 1 : 0) });
@@ -360,6 +360,7 @@ namespace YawVR
 
         public void DisconnectFromDevice(Action onSuccess, Action<string> onError)
         {
+            if (RustActive) { RustDisconnectFromDevice(onSuccess, onError); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (state != ControllerState.Initial)
             {
                 callBacks.exitSuccess = onSuccess;
@@ -405,10 +406,7 @@ namespace YawVR
 
                     Debug.Log("[YawController] Found device: " + yawDevice.Name);
 
-                    if (connectType == ConnectType.ConnectFirstFoundDevice)
-                    {
-                        HandleAutoDiscoveredDevice(yawDevice);
-                    }
+                    DeviceDiscovered?.Invoke(yawDevice);
                 }
             }
         }
@@ -644,11 +642,13 @@ namespace YawVR
         /// </summary>
         private void SendRotation(OVector rotation)
         {
+            if (RustActive) { RustSendRotation(rotation); return; } // Rust yawvr-server, see YawController.RustServer.cs
             udpClient.Send(Commands.MOTION_DATA(rotation.yaw, rotation.pitch, rotation.roll, buzzer, smartPlug));
         }
 
         public void SendLED(Color32[] colors)
         {
+            if (RustActive) { RustSendLED(colors); return; } // Rust yawvr-server, see YawController.RustServer.cs
             if (colors.Length != 129) return;
 
             udpClient.Send(Commands.UDP_LED_CMD(colors));
@@ -656,6 +656,7 @@ namespace YawVR
 
         public void SendLED(Color32 color)
         {
+            if (RustActive) { RustSendLED(color); return; } // Rust yawvr-server, see YawController.RustServer.cs
             udpClient.Send(Commands.UDP_LED_CMD(color));
         }
 
@@ -688,6 +689,7 @@ namespace YawVR
             {
                 ControllerDelegate.ControllerStateChanged(newState);
             }
+            StateChanged?.Invoke(newState);
         }
 
         private IEnumerator ResponseTimeout(Action<string> onError)
@@ -745,41 +747,6 @@ namespace YawVR
             public Coroutine tcpConnectionAttemptTimeout;
         }
 
-        #region AutoConnect
-        private Coroutine discoveryCoroutine;
-
-        private void AutoConnect()
-        {
-            discoveryCoroutine = StartCoroutine(DeviceDiscoveryCoroutine());
-        }
-
-        private IEnumerator DeviceDiscoveryCoroutine()
-        {
-            for (int i = 0; i < 3 && state == ControllerState.Initial; i++)
-            {
-                DiscoverDevices(50010);
-                yield return new WaitForSeconds(0.2f);
-            }
-
-            while (state == ControllerState.Initial)
-            {
-                DiscoverDevices(50010);
-                yield return new WaitForSeconds(1f);
-            }
-        }
-
-        private void HandleAutoDiscoveredDevice(YawDevice device)
-        {
-            if (state == ControllerState.Initial && (device.Status == DeviceStatus.Available || device.Status == DeviceStatus.Unknown))
-            {
-                StopCoroutineSafe(ref discoveryCoroutine);
-                ConnectToDevice(device, () =>
-                {
-                    StartDevice();
-                }, (error) => { Debug.Log("[YawController] connection error"); });
-            }
-        }
-
         private IEnumerator DeviceHeartbeat()
         {
             WaitForSeconds wait = new WaitForSeconds(1f);
@@ -792,6 +759,5 @@ namespace YawVR
                 yield return wait;
             }
         }
-        #endregion
     }
 }

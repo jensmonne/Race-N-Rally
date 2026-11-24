@@ -1,0 +1,6 @@
+<!-- IL2CPP managed-code stripping: keep the protocol assembly and Google.Protobuf intact.
+     Parsing/serializing uses no reflection; this only guards the generated descriptors. -->
+<linker>
+  <assembly fullname="YawVR.Next" preserve="all"/>
+  <assembly fullname="Google.Protobuf" preserve="all"/>
+</linker>
